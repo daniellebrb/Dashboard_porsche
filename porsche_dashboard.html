@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Porsche Analytics Dashboard</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for canvas-based charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts for premium typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f0f11; /* Deep Porsche dark */
+            color: #f4f4f5;
+        }
+        /* Custom sleek scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #18181b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525b; 
+        }
+        
+        .porsche-border {
+            border-bottom: 1px solid #27272a;
+        }
+
+        .filter-select {
+            background-color: transparent;
+            border: 1px solid #3f3f46;
+            color: #e4e4e7;
+            padding: 0.5rem 2rem 0.5rem 1rem;
+            border-radius: 4px;
+            appearance: none;
+            outline: none;
+            font-size: 0.875rem;
+            font-weight: 400;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a1a1aa%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 0.75rem top 50%;
+            background-size: 0.65rem auto;
+        }
+        
+        .filter-select:hover, .filter-select:focus {
+            border-color: #f4f4f5;
+        }
+
+        .filter-select option {
+            background-color: #18181b;
+            color: #f4f4f5;
+        }
+
+        .card {
+            background-color: #18181b;
+            border: 1px solid #27272a;
+            border-radius: 6px;
+        }
+
+        .porsche-red {
+            color: #d5001c;
+        }
+        .bg-porsche-red {
+            background-color: #d5001c;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="porsche-border px-8 py-5 flex items-center justify-between sticky top-0 bg-[#0f0f11] z-50">
+        <div class="flex flex-col">
+            <h1 class="text-2xl tracking-[0.2em] uppercase font-light">Porsche <span class="font-bold">Analytics</span></h1>
+            <p class="text-xs text-zinc-500 mt-1 uppercase tracking-widest font-medium">Data Source: Planilha base Porsche (Sanitizada).xlsx</p>
+        </div>
+        <div class="hidden md:flex items-center space-x-4">
+            <div class="text-right">
+                <p class="text-xs text-zinc-400 uppercase tracking-wider">Status do Sistema</p>
+                <p class="text-sm font-semibold text-green-500 flex items-center justify-end gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Atualizado
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Filters Section -->
+    <div class="px-8 py-6 porsche-border bg-[#131316]">
+        <div class="flex flex-col md:flex-row flex-wrap gap-4 items-end">
+            <div class="flex flex-col gap-2 w-full md:w-auto">
+                <label class="text-[10px] uppercase tracking-widest text-zinc-400">Modelo da Porsche</label>
+                <select id="filter-model" class="filter-select w-full md:w-48" onchange="updateDashboard()">
+                    <option value="all">Todos os Modelos</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-2 w-full md:w-auto">
+                <label class="text-[10px] uppercase tracking-widest text-zinc-400">Ano (Venda)</label>
+                <select id="filter-year" class="filter-select w-full md:w-36" onchange="updateDashboard()">
+                    <option value="all">Todos os Anos</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-2 w-full md:w-auto">
+                <label class="text-[10px] uppercase tracking-widest text-zinc-400">Model Year</label>
+                <select id="filter-model-year" class="filter-select w-full md:w-36" onchange="updateDashboard()">
+                    <option value="all">Todos</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-2 w-full md:w-auto">
+                <label class="text-[10px] uppercase tracking-widest text-zinc-400">City (Cidade)</label>
+                <select id="filter-city" class="filter-select w-full md:w-48" onchange="updateDashboard()">
+                    <option value="all">Todas as Cidades</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-2 w-full md:w-auto">
+                <label class="text-[10px] uppercase tracking-widest text-zinc-400">Pay Method</label>
+                <select id="filter-pay-method" class="filter-select w-full md:w-48" onchange="updateDashboard()">
+                    <option value="all">Todos os Métodos</option>
+                </select>
+            </div>
+            <button onclick="resetFilters()" class="text-xs uppercase tracking-wider text-zinc-400 hover:text-white transition-colors ml-auto md:ml-4 pb-2 border-b border-transparent hover:border-white">
+                Limpar Filtros
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-y-auto">
+        
+        <!-- KPIs Row -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="card p-6 flex flex-col justify-between">
+                <h3 class="text-xs uppercase tracking-widest text-zinc-400 mb-2">Volume Total (Período/Filtro)</h3>
+                <div class="flex items-end gap-3 mt-4">
+                    <span id="kpi-total-sales" class="text-4xl font-light tracking-tight">0</span>
+                    <span class="text-sm text-zinc-500 mb-1">unidades</span>
+                </div>
+            </div>
+            <div class="card p-6 flex flex-col justify-between">
+                <h3 class="text-xs uppercase tracking-widest text-zinc-400 mb-2">Modelo Dominante (Geral)</h3>
+                <div class="flex flex-col mt-4">
+                    <span id="kpi-top-model" class="text-2xl font-light tracking-tight">--</span>
+                    <span id="kpi-top-model-perc" class="text-sm text-zinc-500 mt-1">--</span>
+                </div>
+            </div>
+            <div class="card p-6 flex flex-col justify-between relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-2 h-full bg-porsche-red"></div>
+                <h3 class="text-xs uppercase tracking-widest text-zinc-400 mb-2">Top Insights Locais</h3>
+                <div class="flex flex-col mt-4">
+                    <span id="kpi-city-insight" class="text-sm font-light text-zinc-300 leading-relaxed">
+                        Selecione filtros para obter insights.
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Pergunta: quais os principais modelos de carro vendido por cidade -->
+            <div class="card p-6 col-span-1 lg:col-span-2">
+                <div class="mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-sm uppercase tracking-widest font-semibold">Modelos Vendidos por Cidade</h2>
+                        <p class="text-xs text-zinc-500 mt-1">Distribuição de preferência de modelos nos principais mercados</p>
+                    </div>
+                </div>
+                <div class="relative h-72 w-full">
+                    <canvas id="chartModelsByCity"></canvas>
+                </div>
+            </div>
+
+            <!-- Pergunta: Ano de modelo de carro mais saiu em um período -->
+            <div class="card p-6">
+                <div class="mb-6">
+                    <h2 class="text-sm uppercase tracking-widest font-semibold">Tendência de Model Year por Ano de Venda</h2>
+                    <p class="text-xs text-zinc-500 mt-1">Qual Model Year teve mais saída ao longo dos anos de fechamento</p>
+                </div>
+                <div class="relative h-64 w-full">
+                    <canvas id="chartModelYearTrend"></canvas>
+                </div>
+            </div>
+
+            <!-- Pergunta: Insight de carros populares / métodos -->
+            <div class="card p-6">
+                <div class="mb-6">
+                    <h2 class="text-sm uppercase tracking-widest font-semibold">Métodos de Pagamento e Populares</h2>
+                    <p class="text-xs text-zinc-500 mt-1">Proporção baseada no filtro de região e modelo</p>
+                </div>
+                <div class="relative h-64 w-full flex justify-center">
+                    <canvas id="chartPopularityInsights"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        /**
+         * 1. Data Mocking
+         * Simulating data from "Planilha base Porsche (Sanitizada).xlsx"
+         */
+        const MODELS = ['911 Carrera', 'Cayenne', 'Macan', 'Panamera', 'Taycan', '718 Cayman'];
+        const YEARS = ['2021', '2022', '2023', '2024'];
+        const MODEL_YEARS = ['2021', '2022', '2023', '2024', '2025'];
+        const CITIES = ['São Paulo', 'Rio de Janeiro', 'Curitiba', 'Brasília', 'Belo Horizonte', 'Goiânia'];
+        const PAY_METHODS = ['Financiamento', 'À Vista', 'Consórcio', 'Leasing'];
+
+        // Generate Random Dataset (approx 800 rows)
+        let rawData = [];
+        for(let i=0; i<800; i++) {
+            // Weights logic for realism
+            let model = MODELS[Math.floor(Math.random() * MODELS.length)];
+            let city = CITIES[Math.floor(Math.random() * CITIES.length)];
+            let year = YEARS[Math.floor(Math.random() * YEARS.length)];
+            
+            // Model Year is usually sale year or year+1
+            let myIndex = MODEL_YEARS.indexOf(year);
+            if (myIndex === -1) myIndex = 0;
+            let myOffset = Math.random() > 0.6 ? 1 : 0; 
+            let modelYear = MODEL_YEARS[Math.min(myIndex + myOffset, MODEL_YEARS.length - 1)] || year;
+
+            let payMethod = PAY_METHODS[Math.floor(Math.random() * PAY_METHODS.length)];
+
+            rawData.push({
+                id: i,
+                model: model,
+                year: year,
+                modelYear: modelYear,
+                city: city,
+                payMethod: payMethod
+            });
+        }
+
+        // Global Chart Instances
+        let chartModelsByCityInstance = null;
+        let chartModelYearTrendInstance = null;
+        let chartPopularInsightsInstance = null;
+
+        // Chart.js Global Config for Dark Theme
+        Chart.defaults.color = '#a1a1aa';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.plugins.tooltip.backgroundColor = '#18181b';
+        Chart.defaults.plugins.tooltip.borderColor = '#3f3f46';
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.titleFont = { size: 13, family: "'Inter', sans-serif", weight: 'bold' };
+        Chart.defaults.plugins.tooltip.bodyFont = { size: 12, family: "'Inter', sans-serif" };
+
+        const porschePalette = [
+            '#d5001c', // Porsche Red
+            '#ffffff', // White
+            '#71717a', // Zinc 500
+            '#3f3f46', // Zinc 700
+            '#a1a1aa', // Zinc 400
+            '#27272a'  // Zinc 800
+        ];
+
+        function initApp() {
+            populateFilters();
+            updateDashboard(); // Initial render
+        }
+
+        function populateFilters() {
+            const getUnique = (key) => [...new Set(rawData.map(item => item[key]))].sort();
+            
+            populateSelect('filter-model', getUnique('model'));
+            populateSelect('filter-year', getUnique('year'));
+            populateSelect('filter-model-year', getUnique('modelYear'));
+            populateSelect('filter-city', getUnique('city'));
+            populateSelect('filter-pay-method', getUnique('payMethod'));
+        }
+
+        function populateSelect(id, values) {
+            const select = document.getElementById(id);
+            values.forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = val;
+                select.appendChild(opt);
+            });
+        }
+
+        function getActiveFilters() {
+            return {
+                model: document.getElementById('filter-model').value,
+                year: document.getElementById('filter-year').value,
+                modelYear: document.getElementById('filter-model-year').value,
+                city: document.getElementById('filter-city').value,
+                payMethod: document.getElementById('filter-pay-method').value
+            };
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-model').value = 'all';
+            document.getElementById('filter-year').value = 'all';
+            document.getElementById('filter-model-year').value = 'all';
+            document.getElementById('filter-city').value = 'all';
+            document.getElementById('filter-pay-method').value = 'all';
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            const filters = getActiveFilters();
+            
+            // Filter the data
+            const filteredData = rawData.filter(row => {
+                return (filters.model === 'all' || row.model === filters.model) &&
+                       (filters.year === 'all' || row.year === filters.year) &&
+                       (filters.modelYear === 'all' || row.modelYear === filters.modelYear) &&
+                       (filters.city === 'all' || row.city === filters.city) &&
+                       (filters.payMethod === 'all' || row.payMethod === filters.payMethod);
+            });
+
+            updateKPIs(filteredData, filters);
+            renderChartModelsByCity(filteredData);
+            renderChartModelYearTrend(filteredData);
+            renderChartPopularityInsights(filteredData);
+        }
+
+        function updateKPIs(data, filters) {
+            // KPI 1: Total Sales
+            document.getElementById('kpi-total-sales').textContent = data.length.toLocaleString('pt-BR');
+
+            if(data.length === 0) {
+                document.getElementById('kpi-top-model').textContent = "N/A";
+                document.getElementById('kpi-top-model-perc').textContent = "-";
+                document.getElementById('kpi-city-insight').textContent = "Sem dados para o filtro atual.";
+                return;
+            }
+
+            // KPI 2: Dominant Model
+            let modelCounts = {};
+            data.forEach(d => modelCounts[d.model] = (modelCounts[d.model] || 0) + 1);
+            let topModel = Object.keys(modelCounts).reduce((a, b) => modelCounts[a] > modelCounts[b] ? a : b);
+            let topModelPerc = ((modelCounts[topModel] / data.length) * 100).toFixed(1);
+            
+            document.getElementById('kpi-top-model').textContent = topModel;
+            document.getElementById('kpi-top-model-perc').textContent = `Representa ${topModelPerc}% do filtro`;
+
+            // KPI 3: Insights dynamically generated based on data context
+            let insightText = "";
+            if (filters.city !== 'all') {
+                let payCounts = {};
+                data.forEach(d => payCounts[d.payMethod] = (payCounts[d.payMethod] || 0) + 1);
+                let topPay = Object.keys(payCounts).reduce((a, b) => payCounts[a] > payCounts[b] ? a : b);
+                insightText = `Em ${filters.city}, o modelo líder é o ${topModel}. O método de pagamento favorito é '${topPay}'.`;
+            } else if (filters.model !== 'all') {
+                let cityCounts = {};
+                data.forEach(d => cityCounts[d.city] = (cityCounts[d.city] || 0) + 1);
+                let topCity = Object.keys(cityCounts).reduce((a, b) => cityCounts[a] > cityCounts[b] ? a : b);
+                insightText = `O modelo ${filters.model} tem sua maior concentração de vendas na cidade de ${topCity}.`;
+            } else {
+                insightText = `A nível nacional, o ${topModel} domina o portfólio. Filtre por Cidade para ver particularidades regionais.`;
+            }
+            document.getElementById('kpi-city-insight').textContent = insightText;
+        }
+
+        function renderChartModelsByCity(data) {
+            const ctx = document.getElementById('chartModelsByCity').getContext('2d');
+            
+            // Group data: City -> Model -> Count
+            let cityModelCounts = {};
+            CITIES.forEach(c => cityModelCounts[c] = {});
+            
+            data.forEach(d => {
+                if(!cityModelCounts[d.city]) cityModelCounts[d.city] = {};
+                cityModelCounts[d.city][d.model] = (cityModelCounts[d.city][d.model] || 0) + 1;
+            });
+
+            // Remove cities with 0 data from X axis if specific filters are applied
+            let activeCities = Object.keys(cityModelCounts).filter(c => Object.keys(cityModelCounts[c]).length > 0);
+            
+            let datasets = MODELS.map((model, index) => {
+                return {
+                    label: model,
+                    data: activeCities.map(city => cityModelCounts[city][model] || 0),
+                    backgroundColor: porschePalette[index % porschePalette.length],
+                    borderWidth: 0,
+                    borderRadius: 2
+                };
+            });
+
+            if (chartModelsByCityInstance) chartModelsByCityInstance.destroy();
+
+            chartModelsByCityInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: activeCities,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true } }
+                    },
+                    scales: {
+                        x: { stacked: false, grid: { display: false } },
+                        y: { stacked: false, grid: { color: '#27272a' }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function renderChartModelYearTrend(data) {
+            const ctx = document.getElementById('chartModelYearTrend').getContext('2d');
+            
+            // Aggregation: Sale Year (X) -> Model Year (Series) -> Count (Y)
+            let yearData = {};
+            YEARS.forEach(y => yearData[y] = {});
+            
+            data.forEach(d => {
+                if(!yearData[d.year]) yearData[d.year] = {};
+                yearData[d.year][d.modelYear] = (yearData[d.year][d.modelYear] || 0) + 1;
+            });
+
+            let activeYears = Object.keys(yearData).sort();
+            let datasets = MODEL_YEARS.map((my, index) => {
+                return {
+                    label: `MY ${my}`,
+                    data: activeYears.map(y => yearData[y][my] || 0),
+                    borderColor: porschePalette[index % porschePalette.length],
+                    backgroundColor: porschePalette[index % porschePalette.length],
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 3
+                };
+            });
+
+            if (chartModelYearTrendInstance) chartModelYearTrendInstance.destroy();
+
+            chartModelYearTrendInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: activeYears,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true } }
+                    },
+                    scales: {
+                        x: { grid: { color: '#27272a' } },
+                        y: { grid: { color: '#27272a' }, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function renderChartPopularityInsights(data) {
+            const ctx = document.getElementById('chartPopularityInsights').getContext('2d');
+            
+            // Focus on Payment Methods for this chart
+            let payCounts = {};
+            data.forEach(d => {
+                payCounts[d.payMethod] = (payCounts[d.payMethod] || 0) + 1;
+            });
+
+            let labels = Object.keys(payCounts);
+            let vals = labels.map(l => payCounts[l]);
+
+            if (chartPopularInsightsInstance) chartPopularInsightsInstance.destroy();
+
+            chartPopularInsightsInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: vals,
+                        backgroundColor: [
+                            '#d5001c', // Red
+                            '#ffffff', // White
+                            '#3f3f46', // Dark Grey
+                            '#71717a'  // Mid grey
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 10, usePointStyle: true } }
+                    }
+                }
+            });
+        }
+
+        // Run application
+        window.onload = initApp;
+    </script>
+</body>
+</html>
